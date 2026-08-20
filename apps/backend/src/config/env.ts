@@ -12,7 +12,7 @@ export const env = createEnv({
       .default("development"),
 
     // Database
-    DATABASE_URL: z.string().min(10, "PostgreSQL connection URL is required"),
+    MONGODB_URI: z.string().min(10, "MongoDB connection URI is required"),
 
     // Redis (queues, caching, distributed locks) — optional in dev; queue/lock
     // features degrade if unset, boot doesn't fail

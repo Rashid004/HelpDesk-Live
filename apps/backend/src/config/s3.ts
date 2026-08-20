@@ -1,7 +1,7 @@
 import { S3Client, HeadBucketCommand } from "@aws-sdk/client-s3";
 import { randomBytes } from "crypto";
-import { logger } from "../config/logger.js";
-import { env } from "../config/env.js";
+import { logger } from "./logger.js";
+import { env } from "./env.js";
 
 let s3Client: S3Client;
 let bucketName: string;

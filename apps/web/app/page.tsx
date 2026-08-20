@@ -18,7 +18,7 @@ const ThemeImage = (props: Props) => {
   );
 };
 
-export default function Home() {
+export default function Home(): React.JSX.Element {
   return (
     <div className={styles.page}>
       <main className={styles.main}>
