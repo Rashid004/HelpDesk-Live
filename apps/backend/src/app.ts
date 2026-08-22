@@ -7,12 +7,7 @@ import { httpLogger } from "./config/logger.js";
 import { initializeS3 } from "./config/s3.js";
 import { errorHandler, type CustomError } from "./middlewares/errorHandler.js";
 import { requestIdMiddleware } from "./middlewares/requestId.middleware.js";
-import authRoutes from "./modules/auth/auth.routes.js";
-import ticketRoutes from "./modules/tickets/ticket.routes.js";
-import messageRoutes from "./modules/messages/message.routes.js";
-import notificationRoutes from "./modules/notifications/notification.routes.js";
-import settingsRoutes from "./modules/settings/settings.routes.js";
-import userRoutes from "./modules/users/user.routes.js";
+import apiRoutes from "./modules/index.js";
 
 const app: Express = express();
 
@@ -52,12 +47,7 @@ app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({ success: true, message: "ok" });
 });
 
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/tickets", ticketRoutes);
-app.use("/api/v1/messages", messageRoutes);
-app.use("/api/v1/notifications", notificationRoutes);
-app.use("/api/v1/settings", settingsRoutes);
-app.use("/api/v1/users", userRoutes);
+app.use("/api/v1", apiRoutes);
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
   const err: CustomError = new Error(

@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { ZodError } from "zod";
 import { ApiError, ApiValidationError } from "../utils/ApiError.js";
 import { ApiResponseHelper } from "../utils/ApiResponse.js";
 import { logger } from "../config/logger.js";
@@ -14,6 +15,20 @@ export function errorHandler(
   _next: NextFunction,
 ): void {
   const requestId = (req as Request & { requestId?: string }).requestId;
+
+  if (err instanceof ZodError) {
+    res.status(422).json(
+      ApiResponseHelper.error(
+        "Validation Error",
+        undefined,
+        err.issues.map((issue) => ({
+          field: issue.path.join(".") || "root",
+          message: issue.message,
+        })),
+      ),
+    );
+    return;
+  }
 
   if (err instanceof ApiValidationError) {
     res.status(422).json(

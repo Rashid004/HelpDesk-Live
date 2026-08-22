@@ -7,14 +7,12 @@ import {
 } from "../types/enums";
 
 const attachmentSchema = z.object({
-  id: z.string(),
   fileUrl: z.string().url(),
   fileType: fileTypeEnum,
   uploadedAt: z.date().default(() => new Date()),
 });
 
 const statusUpdateSchema = z.object({
-  id: z.string(),
   status: ticketStatusEnum,
   changedBy: z.string(),
   note: z.string().optional(),
@@ -55,9 +53,9 @@ export const updateTicketStatusSchema = z
     path: ["resolutionNote"],
   });
 
-export const rateTicketSchema = z.object({
-  score: z.number().min(1).max(5),
-  comment: z.string().optional(),
+export const rateTicketSchema = customerRatingSchema.pick({
+  score: true,
+  comment: true,
 });
 
 export const ticketSchema = z.object({
