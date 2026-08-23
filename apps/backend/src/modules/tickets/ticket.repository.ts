@@ -24,23 +24,15 @@ class TicketRepository {
     const skip = (page - 1) * limit;
 
     const [tickets, total] = await Promise.all([
-      TicketModel.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
+      TicketModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
       TicketModel.countDocuments(filter),
     ]);
 
     return { tickets, total, page, limit, pages: Math.ceil(total / limit) };
-    TicketModel
   }
 
   assignAgent(id: string, agentId: string) {
-    return TicketModel.findByIdAndUpdate(
-      id,
-      { agent: agentId },
-      { new: true },
-    );
+    return TicketModel.findByIdAndUpdate(id, { agent: agentId }, { new: true });
   }
 
   updateStatus(
@@ -60,11 +52,7 @@ class TicketRepository {
   }
 
   rate(id: string, score: number, comment?: string) {
-    return TicketModel.findByIdAndUpdate(
-      id,
-      { customerRating: { score, comment } },
-      { new: true },
-    );
+    return TicketModel.findByIdAndUpdate(id, { customerRating: { score, comment } }, { new: true });
   }
 }
 
