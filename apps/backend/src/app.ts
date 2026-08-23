@@ -7,6 +7,7 @@ import { httpLogger } from "./config/logger.js";
 import { initializeS3 } from "./config/s3.js";
 import { errorHandler, type CustomError } from "./middlewares/errorHandler.js";
 import { requestIdMiddleware } from "./middlewares/requestId.middleware.js";
+import { apiLimiter } from "./middlewares/rateLimiter.middleware.js";
 import apiRoutes from "./modules/index.js";
 
 const app: Express = express();
@@ -29,12 +30,9 @@ app.use(
       const isAllowed =
         !origin ||
         allowedOrigins.includes(origin) ||
-        (env.NODE_ENV !== "production" &&
-          /^http:\/\/localhost:\d+$/.test(origin));
+        (env.NODE_ENV !== "production" && /^http:\/\/localhost:\d+$/.test(origin));
 
-      isAllowed
-        ? callback(null, true)
-        : callback(new Error(`CORS: origin ${origin} not allowed`));
+      isAllowed ? callback(null, true) : callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
   }),
@@ -47,12 +45,10 @@ app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({ success: true, message: "ok" });
 });
 
-app.use("/api/v1", apiRoutes);
+app.use("/api/v1", apiLimiter, apiRoutes);
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
-  const err: CustomError = new Error(
-    `Route not found: ${req.method} ${req.originalUrl}`,
-  );
+  const err: CustomError = new Error(`Route not found: ${req.method} ${req.originalUrl}`);
   err.statusCode = 404;
   next(err);
 });

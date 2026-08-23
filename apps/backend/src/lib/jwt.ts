@@ -26,3 +26,9 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
 export function verifyRefreshToken(token: string): AccessTokenPayload {
   return jwt.verify(token, env.JWT_REFRESH_SECRET) as AccessTokenPayload;
 }
+
+export function getTokenExpiry(token: string): Date {
+  const decoded = jwt.decode(token) as { exp?: number } | null;
+  if (!decoded?.exp) throw new Error("Token has no expiry claim");
+  return new Date(decoded.exp * 1000);
+}
