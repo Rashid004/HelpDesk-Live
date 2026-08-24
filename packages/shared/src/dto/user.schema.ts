@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { userRoleEnum, userDepartmentEnum, userStatusEnum } from "../types/enums";
+import { userRoleEnum, userDepartmentEnum, userStatusEnum } from "../types/enums.js";
 
 const agentMetaSchema = z.object({
   department: userDepartmentEnum,

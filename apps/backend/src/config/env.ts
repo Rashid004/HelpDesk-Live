@@ -53,6 +53,9 @@ export const env = createEnv({
     LOG_LEVEL: z
       .enum(["debug", "info", "warn", "error"])
       .default(process.env.NODE_ENV === "production" ? "info" : "debug"),
+
+    // Sentry — optional in dev; error/perf reporting degrades if unset, boot doesn't fail
+    SENTRY_DSN: z.string().optional(),
   },
   // Runtime environment - what @t3-oss/env-core will read from
   runtimeEnv: process.env,

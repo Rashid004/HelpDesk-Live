@@ -4,7 +4,7 @@ import {
   ticketPriorityEnum,
   ticketStatusEnum,
   fileTypeEnum,
-} from "../types/enums";
+} from "../types/enums.js";
 
 const attachmentSchema = z.object({
   fileUrl: z.string().url(),
