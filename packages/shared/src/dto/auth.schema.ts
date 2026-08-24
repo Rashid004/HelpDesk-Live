@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { userRoleEnum } from "../types/enums";
+import { userRoleEnum } from "../types/enums.js";
 
 export const signupSchema = z.object({
     fullName: z.string().min(2, "Full name must be at least 2 characters"),

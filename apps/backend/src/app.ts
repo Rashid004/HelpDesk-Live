@@ -9,6 +9,9 @@ import { errorHandler, type CustomError } from "./middlewares/errorHandler.js";
 import { requestIdMiddleware } from "./middlewares/requestId.middleware.js";
 import { apiLimiter } from "./middlewares/rateLimiter.middleware.js";
 import apiRoutes from "./modules/index.js";
+import { initSentry, Sentry } from "./lib/sentry.js";
+
+initSentry(); // must run before anything else touches Express
 
 const app: Express = express();
 
@@ -47,12 +50,17 @@ app.get("/health", (_req: Request, res: Response) => {
 
 app.use("/api/v1", apiLimiter, apiRoutes);
 
+app.get("/debug-sentry", function mainHandler(_req: Request, _res: Response) {
+  throw new Error("My first Sentry error!");
+});
+
 app.use((req: Request, _res: Response, next: NextFunction) => {
   const err: CustomError = new Error(`Route not found: ${req.method} ${req.originalUrl}`);
   err.statusCode = 404;
   next(err);
 });
 
+Sentry.setupExpressErrorHandler(app);
 app.use(errorHandler);
 
 initializeS3();
