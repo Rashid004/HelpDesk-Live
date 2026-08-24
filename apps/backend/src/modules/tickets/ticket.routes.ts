@@ -14,6 +14,8 @@ router.get("/", controller.list);
 router.get("/:id", controller.getById);
 router.get("/track/:referenceNumber", controller.getByReferenceNumber);
 
+router.post("/attachments/upload-url", controller.getAttachmentUploadUrl);
+
 router.post("/", authorize("customer"), controller.create);
 router.post("/:id/rate", authorize("customer"), controller.rate);
 

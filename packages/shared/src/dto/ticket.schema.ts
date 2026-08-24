@@ -58,6 +58,12 @@ export const rateTicketSchema = customerRatingSchema.pick({
   comment: true,
 });
 
+export const requestAttachmentUploadSchema = z.object({
+  fileName: z.string().min(1),
+  fileType: fileTypeEnum,
+  contentType: z.string().min(1),
+});
+
 export const ticketSchema = z.object({
   ...ticketBaseSchema,
   id: z.string(),
@@ -81,6 +87,7 @@ export const ticketSchema = z.object({
 export type CreateTicketDTO = z.infer<typeof createTicketSchema>;
 export type UpdateTicketStatusDTO = z.infer<typeof updateTicketStatusSchema>;
 export type RateTicketDTO = z.infer<typeof rateTicketSchema>;
+export type RequestAttachmentUploadDTO = z.infer<typeof requestAttachmentUploadSchema>;
 export type Ticket = z.infer<typeof ticketSchema>;
 export type TicketAttachment = z.infer<typeof attachmentSchema>;
 export type TicketStatusUpdate = z.infer<typeof statusUpdateSchema>;

@@ -4,6 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { userService } from "./user.service.js";
 import {
   changePasswordSchema,
+  requestAvatarUploadSchema,
   toggleShiftSchema,
   updateUserProfileSchema,
   updateUserStatusSchema,
@@ -11,6 +12,12 @@ import {
 
 export class UserController {
   constructor(protected readonly service: typeof userService) {}
+
+  getAvatarUploadUrl = asyncHandler(async (req: Request, res: Response) => {
+    const dto = requestAvatarUploadSchema.parse(req.body);
+    const data = await this.service.getAvatarUploadUrl(dto);
+    res.status(200).json(ApiResponseHelper.success(data, "Upload URL generated"));
+  });
 
   getMe = asyncHandler(async (req: Request, res: Response) => {
     const data = await this.service.getUserById(req.user!.id);

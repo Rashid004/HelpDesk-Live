@@ -9,6 +9,7 @@ const controller = new UserController(userService);
 
 router.use(authenticate);
 
+router.post("/me/avatar/upload-url", controller.getAvatarUploadUrl);
 router.get("/me", controller.getMe);
 router.patch("/me", controller.updateMe);
 router.patch("/me/password", controller.changePassword);

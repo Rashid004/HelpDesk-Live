@@ -61,8 +61,7 @@ export function initializeS3(): void {
       "Failed to initialize AWS S3 client",
     );
     throw new Error(
-      `AWS S3 initialization failed: ${
-        error instanceof Error ? error.message : "Unknown error"
+      `AWS S3 initialization failed: ${error instanceof Error ? error.message : "Unknown error"
       }`,
     );
   }

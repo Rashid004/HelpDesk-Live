@@ -51,6 +51,11 @@ export const toggleShiftSchema = z.object({
   isOnShift: z.boolean(),
 });
 
+export const requestAvatarUploadSchema = z.object({
+  fileName: z.string().min(1),
+  contentType: z.string().min(1),
+});
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
   newPassword: z.string().min(8, "Password must be at least 8 characters"),
@@ -73,6 +78,7 @@ export type UpdateUserProfileDTO = z.infer<typeof updateUserProfileSchema>;
 export type UpdateUserStatusDTO = z.infer<typeof updateUserStatusSchema>;
 export type ToggleShiftDTO = z.infer<typeof toggleShiftSchema>;
 export type ChangePasswordDTO = z.infer<typeof changePasswordSchema>;
+export type RequestAvatarUploadDTO = z.infer<typeof requestAvatarUploadSchema>;
 export type User = z.infer<typeof userSchema>;
 export type UserAgentMeta = z.infer<typeof agentMetaSchema>;
 export type UserStatusUpdate = z.infer<typeof userStatusUpdateSchema>;
