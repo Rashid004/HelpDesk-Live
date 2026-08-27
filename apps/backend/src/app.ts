@@ -50,9 +50,9 @@ app.get("/health", (_req: Request, res: Response) => {
 
 app.use("/api/v1", apiLimiter, apiRoutes);
 
-app.get("/debug-sentry", function mainHandler(_req: Request, _res: Response) {
-  throw new Error("My first Sentry error!");
-});
+// app.get("/debug-sentry", function mainHandler(_req: Request, _res: Response) {
+//   throw new Error("My first Sentry error!");
+// });
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
   const err: CustomError = new Error(`Route not found: ${req.method} ${req.originalUrl}`);
