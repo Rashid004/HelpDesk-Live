@@ -1,50 +1,116 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/*  HelpDesk Live — Neobrutalism design tokens                         */
+/*  Reference: neobrutalism.dev                                        */
+/*  Everything visual (color / shadow / radius / font) is declared     */
+/*  here so components never hand-roll one-off values.                 */
+/* ------------------------------------------------------------------ */
+@theme {
+  /* Fonts — chunky display for headings, clean sans for body */
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Surface + ink */
+  --color-cream: #fffcf5; /* warm off-white page background */
+  --color-paper: #ffffff; /* raised surfaces (cards on cream) */
+  --color-ink: #0a0a0a; /* borders + text — pure-ish black */
+  --color-muted: #6b6b6b; /* secondary text only, never borders */
+
+  /* Accents — two saturated brand colors */
+  --color-brand-yellow: #ffd23f;
+  --color-brand-blue: #2d6bff;
+  --color-brand-pink: #ff5ca8;
+
+  /* Status — bold + saturated, no pastels */
+  --color-status-open: #ff7a1a; /* solid orange */
+  --color-status-progress: #2d6bff; /* solid blue   */
+  --color-status-resolved: #1f9e5a; /* solid green  */
+  --color-status-closed: #6b7280; /* solid gray   */
+
+  /* Priority */
+  --color-priority-low: #9ca3af;
+  --color-priority-normal: #2d6bff;
+  --color-priority-high: #e5484d;
+
+  /* Feedback */
+  --color-danger: #e5484d;
+  --color-success: #1f9e5a;
+
+  /* One radius, used everywhere */
+  --radius-brut: 6px;
+
+  /* Hard offset shadows — never blurred */
+  --shadow-brut-sm: 2px 2px 0 0 var(--color-ink);
+  --shadow-brut: 4px 4px 0 0 var(--color-ink);
+  --shadow-brut-lg: 6px 6px 0 0 var(--color-ink);
+  --shadow-brut-xl: 8px 8px 0 0 var(--color-ink);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ------------------------------------------------------------------ */
+/*  Base                                                               */
+/* ------------------------------------------------------------------ */
+@layer base {
+  * {
+    box-sizing: border-box;
   }
-}
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.imgDark {
-  display: none;
-}
-
-@media (prefers-color-scheme: dark) {
   html {
-    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
   }
 
-  .imgLight {
-    display: none;
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
   }
-  .imgDark {
-    display: unset;
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  /* Visible, chunky focus ring everywhere — never remove it */
+  :focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Reusable neobrutalism helpers                                      */
+/* ------------------------------------------------------------------ */
+@layer components {
+  /* Uppercase chunky label with generous tracking */
+  .label-brut {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+  }
+
+  /* The signature press effect: element sits on its shadow, then
+     shifts into it on hover/active so the shadow "flattens". */
+  .press-brut {
+    transition:
+      transform 100ms ease,
+      box-shadow 100ms ease;
+  }
+  .press-brut:hover {
+    transform: translate(2px, 2px);
+    box-shadow: var(--shadow-brut-sm);
+  }
+  .press-brut:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 0 var(--color-ink);
   }
 }
