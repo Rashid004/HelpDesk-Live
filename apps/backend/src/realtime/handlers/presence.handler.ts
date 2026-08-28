@@ -3,6 +3,12 @@ import type { AppServer, AppSocket } from "../types.js";
 
 const PRESENCE_ROOM = "presence";
 
+/**
+ * Registers realtime presence events for an authenticated socket.
+ *
+ * @param io - The application server used to broadcast offline events
+ * @param socket - The authenticated socket connection to track
+ */
 export function registerPresenceHandlers(io: AppServer, socket: AppSocket): void {
     const user = socket.data.user;
 

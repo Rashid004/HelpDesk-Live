@@ -3,6 +3,13 @@ import { ticketRepository } from "../../modules/tickets/ticket.repository.js";
 import { ticketRoom } from "../rooms.js";
 import type { AppServer, AppSocket } from "../types.js";
 
+/**
+ * Registers chat-related Socket.IO event handlers for a connected client.
+ *
+ * Ticket-room joins are acknowledged with success only for the ticket's customer or assigned agent.
+ *
+ * @param socket - The connected client socket
+ */
 export function registerChatHandlers(io: AppServer, socket: AppSocket): void {
   socket.on("ping-test", (data: unknown) => {
     logger.debug({ socketId: socket.id, data }, "Received ping-test");

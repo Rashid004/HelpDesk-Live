@@ -6,6 +6,9 @@ import { ticketRoom } from "../rooms.js";
 
 const messageService = new MessageService();
 
+/**
+ * Registers socket handlers for sending messages and marking ticket messages as read.
+ */
 export function registerMessageHandlers(io: AppServer, socket: AppSocket): void {
 
     socket.on("message:send", async (payload: { ticketId: string, data: SendMessageDTO }, ack?: (ok: boolean) => void) => {

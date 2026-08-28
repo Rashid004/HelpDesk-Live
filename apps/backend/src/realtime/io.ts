@@ -11,6 +11,12 @@ import { registerPresenceHandlers } from "./handlers/presence.handler.js";
 
 let io: AppServer | undefined;
 
+/**
+ * Initializes the Socket.IO server and attaches it to the provided HTTP server.
+ *
+ * @param httpServer - The HTTP server that hosts Socket.IO connections
+ * @returns The initialized Socket.IO application server
+ */
 export function initSocket(httpServer: HttpServer): AppServer {
   io = new SocketIOServer(httpServer, {
     cors: {
@@ -37,6 +43,12 @@ export function initSocket(httpServer: HttpServer): AppServer {
   return io;
 }
 
+/**
+ * Retrieves the initialized Socket.IO server.
+ *
+ * @returns The initialized Socket.IO server
+ * @throws If the Socket.IO server has not been initialized
+ */
 export function getIO(): AppServer {
   if (!io) {
     throw new Error("Socket.io not initialized. Call initSocket() first.");
