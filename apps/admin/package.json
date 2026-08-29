@@ -13,8 +13,11 @@
     "@ant-design/icons": "^6.3.2",
     "@repo/shared": "workspace:^",
     "antd": "^6.6.1",
+    "dayjs": "^1.11.23",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -18,7 +18,9 @@ import type {
   SendMessageDTO,
   SignupDTO,
 } from "@repo/shared";
+import type { User } from "@repo/shared";
 import { jitter } from "./delay";
+import { http } from "./http";
 import type { AuthResult, MessageView, TicketView, UserView } from "./types";
 import { mockMessages } from "../mocks/messages";
 import { mockTickets } from "../mocks/tickets";
@@ -28,31 +30,36 @@ import { currentUser } from "../mocks/users";
 const clone = <T>(v: T): T => structuredClone(v);
 
 /* ------------------------------------------------------------------ */
-/*  Auth                                                               */
+/*  Auth — WIRED TO THE REAL BACKEND                                   */
 /* ------------------------------------------------------------------ */
 
-export async function signup(dto: SignupDTO): Promise<AuthResult> {
-  // TODO: replace with real POST /api/auth/signup call
-  console.log("[api.signup] payload", dto);
-  await jitter();
+interface AuthResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+}
+
+function toAuthResult(res: AuthResponse): AuthResult {
+  const u = res.user;
   const user: UserView = {
-    id: "usr_new_01",
-    fullName: dto.fullName,
-    email: dto.email,
-    role: dto.role,
+    id: u.id,
+    fullName: u.fullName,
+    email: u.email,
+    role: u.role,
   };
-  return { user, accessToken: "mock.access.token", refreshToken: "mock.refresh.token" };
+  return { user, accessToken: res.accessToken, refreshToken: res.refreshToken };
+}
+
+export async function signup(dto: SignupDTO): Promise<AuthResult> {
+  // Real call — POST /api/v1/auth/signup (envelope unwrapped by lib/http.ts).
+  const data = await http.post<unknown, AuthResponse>("/auth/signup", dto);
+  return toAuthResult(data);
 }
 
 export async function login(dto: LoginDTO): Promise<AuthResult> {
-  // TODO: replace with real POST /api/auth/login call
-  console.log("[api.login] payload", dto);
-  await jitter();
-  return {
-    user: clone(currentUser),
-    accessToken: "mock.access.token",
-    refreshToken: "mock.refresh.token",
-  };
+  // Real call — POST /api/v1/auth/login.
+  const data = await http.post<unknown, AuthResponse>("/auth/login", dto);
+  return toAuthResult(data);
 }
 
 /* ------------------------------------------------------------------ */

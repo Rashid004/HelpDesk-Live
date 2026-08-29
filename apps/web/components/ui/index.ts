@@ -14,6 +14,7 @@ export {
 } from "./Badge";
 export { Field, FieldError } from "./Field";
 export { Input, controlBase } from "./Input";
+export { PasswordInput } from "./PasswordInput";
 export { Textarea } from "./Textarea";
 export { Select } from "./Select";
 export type { SelectOption } from "./Select";

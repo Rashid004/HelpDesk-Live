@@ -3,16 +3,24 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginDTO } from "@repo/shared";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { ScreenLoader } from "../../../components/app/ScreenLoader";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
-import { Field } from "../../../components/ui/Field";
+import { Field, FieldError } from "../../../components/ui/Field";
 import { Input } from "../../../components/ui/Input";
+import { PasswordInput } from "../../../components/ui/PasswordInput";
+import { useGuestGuard } from "../../../hooks/useAuthGuard";
 import { login } from "../../../lib/api";
+import { saveSession } from "../../../lib/session";
 
 export default function SignInPage(): React.JSX.Element {
-  const [signedIn, setSignedIn] = useState<string | null>(null);
+  const router = useRouter();
+  const { ready } = useGuestGuard();
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   const {
     register,
@@ -23,17 +31,27 @@ export default function SignInPage(): React.JSX.Element {
     mode: "onTouched",
   });
 
+  if (!ready) return <ScreenLoader label="One moment…" />;
+
   async function onSubmit(values: LoginDTO): Promise<void> {
-    // TODO: replace with real POST /api/auth/login — persist tokens,
-    // redirect to /dashboard.
-    console.log("[signin] submit", values);
-    const res = await login(values);
-    setSignedIn(res.user.fullName);
+    setServerError(null);
+    try {
+      const res = await login(values);
+      saveSession(res);
+      setRedirecting(true);
+      router.push("/dashboard");
+    } catch (err) {
+      setServerError(
+        err instanceof Error
+          ? err.message
+          : "We couldn't sign you in. Please try again.",
+      );
+    }
   }
 
-  if (signedIn) {
+  if (redirecting) {
     return (
-      <Card tone="yellow" className="flex flex-col gap-4 text-center">
+      <Card tone="yellow" className="flex flex-col gap-3 text-center">
         <span
           aria-hidden
           className="mx-auto grid size-14 place-items-center border-2 border-ink bg-paper rounded-brut text-2xl font-black shadow-brut"
@@ -41,12 +59,7 @@ export default function SignInPage(): React.JSX.Element {
           ✓
         </span>
         <h1 className="font-display text-2xl font-black">Signed in</h1>
-        <p className="text-sm font-medium">
-          Welcome back, {signedIn.split(" ")[0]}. Taking you to your tickets…
-        </p>
-        <p className="text-xs text-muted">
-          (Demo only — dashboard routing gets wired with the real API.)
-        </p>
+        <p className="text-sm font-medium">Taking you to your tickets…</p>
       </Card>
     );
   }
@@ -59,6 +72,8 @@ export default function SignInPage(): React.JSX.Element {
           Pick up your support conversations where you left off.
         </p>
       </header>
+
+      {serverError && <FieldError>{serverError}</FieldError>}
 
       <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Field label="Email" htmlFor="email" required error={errors.email?.message}>
@@ -73,9 +88,8 @@ export default function SignInPage(): React.JSX.Element {
         </Field>
 
         <Field label="Password" htmlFor="password" required error={errors.password?.message}>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             placeholder="••••••••"
             invalid={!!errors.password}

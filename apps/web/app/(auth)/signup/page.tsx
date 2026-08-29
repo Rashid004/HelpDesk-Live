@@ -2,15 +2,20 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { UserRole } from "@repo/shared";
+import { ScreenLoader } from "../../../components/app/ScreenLoader";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
-import { Field } from "../../../components/ui/Field";
+import { Field, FieldError } from "../../../components/ui/Field";
 import { Input } from "../../../components/ui/Input";
+import { PasswordInput } from "../../../components/ui/PasswordInput";
+import { useGuestGuard } from "../../../hooks/useAuthGuard";
 import { signup } from "../../../lib/api";
 import { cn } from "../../../lib/cn";
+import { saveSession } from "../../../lib/session";
 import {
   passwordStrength,
   signupFormSchema,
@@ -32,7 +37,10 @@ const STRENGTH_BAR = [
 ];
 
 export default function SignUpPage(): React.JSX.Element {
-  const [done, setDone] = useState<SignupFormValues | null>(null);
+  const router = useRouter();
+  const { ready } = useGuestGuard();
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   const {
     register,
@@ -50,18 +58,29 @@ export default function SignUpPage(): React.JSX.Element {
   const pw = watch("password") ?? "";
   const strength = passwordStrength(pw);
 
+  if (!ready) return <ScreenLoader label="One moment…" />;
+
   async function onSubmit(values: SignupFormValues): Promise<void> {
-    // TODO: replace with real POST /api/auth/signup — strip confirmPassword,
-    // persist tokens, redirect to /dashboard.
+    // confirmPassword is a UI-only field — the backend signupSchema doesn't have it.
     const { confirmPassword: _omit, ...payload } = values;
-    console.log("[signup] submit", payload);
-    await signup(payload);
-    setDone(values);
+    setServerError(null);
+    try {
+      const res = await signup(payload);
+      saveSession(res);
+      setRedirecting(true);
+      router.push("/dashboard");
+    } catch (err) {
+      setServerError(
+        err instanceof Error
+          ? err.message
+          : "We couldn't create your account. Please try again.",
+      );
+    }
   }
 
-  if (done) {
+  if (redirecting) {
     return (
-      <Card tone="yellow" className="flex flex-col gap-4 text-center">
+      <Card tone="yellow" className="flex flex-col gap-3 text-center">
         <span
           aria-hidden
           className="mx-auto grid size-14 place-items-center border-2 border-ink bg-paper rounded-brut text-2xl font-black shadow-brut"
@@ -69,16 +88,7 @@ export default function SignUpPage(): React.JSX.Element {
           ✓
         </span>
         <h1 className="font-display text-2xl font-black">Account created</h1>
-        <p className="text-sm font-medium">
-          Welcome aboard, {done.fullName.split(" ")[0]}. Your {done.role} account
-          is ready.
-        </p>
-        <Button variant="secondary" fullWidth onClick={() => setDone(null)}>
-          Back to form
-        </Button>
-        <p className="text-xs text-muted">
-          (Demo only — no real account was created.)
-        </p>
+        <p className="text-sm font-medium">Setting up your dashboard…</p>
       </Card>
     );
   }
@@ -91,6 +101,8 @@ export default function SignUpPage(): React.JSX.Element {
           Start tracking your support tickets in one place.
         </p>
       </header>
+
+      {serverError && <FieldError>{serverError}</FieldError>}
 
       <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Field label="Full name" htmlFor="fullName" required error={errors.fullName?.message}>
@@ -121,9 +133,8 @@ export default function SignUpPage(): React.JSX.Element {
           error={errors.password?.message}
           hint="At least 8 characters. Mix in a number and a symbol for a stronger password."
         >
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
             placeholder="••••••••"
             invalid={!!errors.password}
@@ -149,9 +160,8 @@ export default function SignUpPage(): React.JSX.Element {
           required
           error={errors.confirmPassword?.message}
         >
-          <Input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             autoComplete="new-password"
             placeholder="••••••••"
             invalid={!!errors.confirmPassword}
