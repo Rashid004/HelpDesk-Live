@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../../middlewares/auth.middleware.js";
+import { createTicketLimiter } from "../../middlewares/rateLimiter.middleware.js";
 import { TicketController } from "./ticket.controller.js";
 import { TicketService } from "./ticket.service.js";
 
@@ -16,7 +17,7 @@ router.get("/track/:referenceNumber", controller.getByReferenceNumber);
 
 router.post("/attachments/upload-url", controller.getAttachmentUploadUrl);
 
-router.post("/", authorize("customer"), controller.create);
+router.post("/", authorize("customer"), createTicketLimiter, controller.create);
 router.post("/:id/rate", authorize("customer"), controller.rate);
 
 router.patch("/:id/claim", authorize("agent"), controller.claim);

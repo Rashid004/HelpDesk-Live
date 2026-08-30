@@ -5,7 +5,9 @@ import type {
   RequestAttachmentUploadDTO,
 } from "@repo/shared";
 import { ApiError } from "../../utils/ApiError.js";
-import { withAssignmentLock } from "../../infrastructure/lock.js";
+import { acquireLock, releaseLock } from "../../infrastructure/redisLock.js";
+import { getIO } from "../../realtime/io.js";
+import { ticketRoom } from "../../realtime/rooms.js";
 import { generateReferenceNumber } from "../../lib/referenceNumber.js";
 import { createUploadUrl } from "../../lib/s3.js";
 import { validateFileExtension } from "../../config/s3.js";
@@ -52,14 +54,36 @@ export class TicketService {
   }
 
   async claimTicket(ticketId: string, agentId: string) {
-    return withAssignmentLock(ticketId, async () => {
+    const lockKey = `ticket-lock:${ticketId}`;
+
+    // Fast gate: only one request per ticket may proceed past this point.
+    const locked = await acquireLock(lockKey, agentId);
+    if (!locked) {
+      throw new ApiError("Ticket is already being assigned", 409);
+    }
+
+    try {
+      // Source of truth: the lock only guaranteed we run this check alone.
       const ticket = await ticketRepository.findById(ticketId);
       if (!ticket) throw new ApiError("Ticket not found", 404);
       if (ticket.agent) throw new ApiError("Ticket already claimed", 409);
 
       const updated = await ticketRepository.assignAgent(ticketId, agentId);
-      return toTicketDTO(updated!);
-    });
+      const dto = toTicketDTO(updated!);
+
+      // Tell every agent viewing this ticket that it's now taken, so their
+      // "Assign to me" button disappears without a refresh.
+      getIO().to(ticketRoom(ticketId)).emit("ticket:assigned", {
+        ticketId,
+        agentId,
+        ticket: dto,
+      });
+
+      return dto;
+    } finally {
+      // Always release — success, DB re-check failure, or mapper error.
+      await releaseLock(lockKey, agentId);
+    }
   }
 
   async updateStatus(ticketId: string, changedBy: string, data: UpdateTicketStatusDTO) {
