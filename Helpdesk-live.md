@@ -59,7 +59,7 @@ This project was built specifically as a **learning vehicle**, not just a produc
 
 | # | Deliverable | Description |
 |---|---|---|
-| 1 | Monorepo | Turborepo + pnpm workspace (`apps/web`, `apps/admin`, `apps/backend`, `packages/shared`) |
+| 1 | Monorepo | Turborepo + pnpm workspace (`apps/web`, `apps/backend`, `packages/shared`) — single web app serves both customers and agents via role-based routing |
 | 2 | Backend API | Express.js + TypeScript + MongoDB/Mongoose, all modules functional |
 | 3 | Real-time layer | Socket.IO chat + presence, Redis adapter |
 | 4 | Background jobs | BullMQ queues/workers with retry handling |

@@ -14,6 +14,9 @@ import { validateFileExtension } from "../../config/s3.js";
 import { ALLOWED_DOCUMENT_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS } from "../../utils/constants.js";
 import { ticketRepository } from "./ticket.repository.js";
 import { toTicketDTO, toTicketDTOList } from "./ticket.maper.js";
+import { userRepository } from "../users/user.repository.js";
+import { enqueueResolutionEmail } from "../../infrastructure/queue/email.queue.js";
+import { logger } from "../../config/logger.js";
 
 export class TicketService {
   async getAttachmentUploadUrl(data: RequestAttachmentUploadDTO) {
@@ -97,6 +100,16 @@ export class TicketService {
       data.note,
       data.resolutionNote,
     );
+
+    if (data.status === "resolved" && ticket.status !== "resolved") {
+      const customer = await userRepository.findById(ticket.customer.toString());
+      if (customer?.email) {
+        await enqueueResolutionEmail(ticketId, customer.email, updated!.referenceNumber);
+      } else {
+        logger.warn({ ticketId }, "resolved ticket has no customer email — email skipped");
+      }
+    }
+
     return toTicketDTO(updated!);
   }
 
