@@ -25,17 +25,25 @@ export class TicketController {
   });
 
   getById = asyncHandler(async (req: Request, res: Response) => {
-    const data = await this.service.getTicketById(String(req.params.id));
+    const data = await this.service.getTicketById(
+      String(req.params.id),
+      req.user!.id,
+      req.user!.role,
+    );
     res.status(200).json(ApiResponseHelper.success(data));
   });
 
   getByReferenceNumber = asyncHandler(async (req: Request, res: Response) => {
-    const data = await this.service.getTicketByReferenceNumber(String(req.params.referenceNumber));
+    const data = await this.service.getTicketByReferenceNumber(
+      String(req.params.referenceNumber),
+      req.user!.id,
+      req.user!.role,
+    );
     res.status(200).json(ApiResponseHelper.success(data));
   });
 
   list = asyncHandler(async (req: Request, res: Response) => {
-    const { page, limit, status, category, priority } = req.query as Record<
+    const { page, limit, status, category, priority, mine, unassigned } = req.query as Record<
       string,
       string | undefined
     >;
@@ -44,8 +52,19 @@ export class TicketController {
     if (status) filter.status = status;
     if (category) filter.category = category;
     if (priority) filter.priority = priority;
-    if (req.user!.role === "customer") filter.customer = req.user!.id;
-    if (req.user!.role === "agent") filter.agent = req.user!.id;
+
+    if (req.user!.role === "customer") {
+      // Security boundary, not a preference — a customer only ever sees
+      // their own tickets, regardless of query params.
+      filter.customer = req.user!.id;
+    } else if (req.user!.role === "agent") {
+      // Agents opt into a scope: `mine=true` for their claimed tickets,
+      // `unassigned=true` for the open queue nobody's claimed yet. Neither
+      // flag means the full queue (every ticket, any assignment) — that's
+      // deliberate, so the agent dashboard's default view isn't empty.
+      if (mine === "true") filter.agent = req.user!.id;
+      else if (unassigned === "true") filter.agent = null;
+    }
 
     const result = await this.service.listTickets(filter, Number(page) || 1, Number(limit) || 20);
 

@@ -12,8 +12,9 @@ import { Card } from "../../../components/ui/Card";
 import { Field, FieldError } from "../../../components/ui/Field";
 import { Input } from "../../../components/ui/Input";
 import { PasswordInput } from "../../../components/ui/PasswordInput";
-import { useGuestGuard } from "../../../hooks/useAuthGuard";
+import { homeFor, useGuestGuard } from "../../../hooks/useAuthGuard";
 import { login } from "../../../lib/api";
+import { applyApiFieldErrors } from "../../../lib/formErrors";
 import { saveSession } from "../../../lib/session";
 
 export default function SignInPage(): React.JSX.Element {
@@ -25,6 +26,7 @@ export default function SignInPage(): React.JSX.Element {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<LoginDTO>({
     resolver: zodResolver(loginSchema),
@@ -39,8 +41,14 @@ export default function SignInPage(): React.JSX.Element {
       const res = await login(values);
       saveSession(res);
       setRedirecting(true);
-      router.push("/dashboard");
+      router.push(homeFor(res.user.role));
     } catch (err) {
+      // Wrong email vs. wrong password never gets field-level treatment —
+      // auth.service.ts's loginUser deliberately returns the same message
+      // for both ("Invalid email or password") so a failed attempt can't be
+      // used to enumerate registered emails. Only real validation errors
+      // (malformed email, empty password) are field-specific.
+      if (applyApiFieldErrors(err, setError)) return;
       setServerError(
         err instanceof Error
           ? err.message

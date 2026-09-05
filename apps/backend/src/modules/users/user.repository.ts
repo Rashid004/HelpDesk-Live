@@ -54,6 +54,19 @@ class UserRepository {
     return UserModel.findByIdAndUpdate(id, { "agentMeta.isOnShift": isOnShift }, { new: true });
   }
 
+  updateFcmToken(id: string, fcmToken: string) {
+    return UserModel.findByIdAndUpdate(id, { fcmToken }, { new: true });
+  }
+
+  /** Agents with a saved push token — the send list for a new-ticket notification. */
+  findAgentsWithFcmToken() {
+    return UserModel.find({
+      role: "agent",
+      status: "active",
+      fcmToken: { $ne: null },
+    });
+  }
+
   touchLastSeen(id: string) {
     return UserModel.findByIdAndUpdate(id, { lastSeenAt: new Date() }, { new: true });
   }

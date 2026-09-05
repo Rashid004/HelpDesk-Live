@@ -75,6 +75,11 @@ export const ticketSchema = z.object({
     ),
   customer: z.string(),
   agent: z.string().nullable(),
+  // Populated display names — present when the repository layer populates
+  // customer/agent (ticket.repository.ts), absent otherwise (e.g. a
+  // referenced user was deleted). Never trust these for authorization.
+  customerName: z.string().optional(),
+  agentName: z.string().nullable().optional(),
   attachments: z.array(attachmentSchema).optional(),
   status: ticketStatusEnum.default("open"),
   statusUpdates: z.array(statusUpdateSchema).default([]),

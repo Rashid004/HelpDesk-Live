@@ -6,20 +6,18 @@ import { EmptyTickets } from "../../components/tickets/EmptyTickets";
 import { TicketCard } from "../../components/tickets/TicketCard";
 import { Button } from "../../components/ui/Button";
 import { FieldError } from "../../components/ui/Field";
+import { Pagination } from "../../components/ui/Pagination";
 import { TicketCardSkeleton } from "../../components/ui/Skeleton";
 import { useAuthGuard } from "../../hooks/useAuthGuard";
-import { useMyTickets } from "../../hooks/useMyTickets";
-import { getStoredUser } from "../../lib/session";
-import { currentUser } from "../../mocks/users";
+import { useSession } from "../../hooks/useSession";
+import { useTickets } from "../../hooks/useTickets";
 
 export default function DashboardPage(): React.JSX.Element {
-  const { ready } = useAuthGuard();
-  const { tickets, loading, error, reload } = useMyTickets();
+  const { ready } = useAuthGuard("customer");
+  const { tickets, pagination, loading, error, page, setPage, reload } = useTickets({}, ready);
+  const { user } = useSession();
 
-  if (!ready) return <ScreenLoader label="Checking your session…" />;
-
-  // Real signed-in user from the session; mock is only a dev fallback.
-  const user = getStoredUser() ?? currentUser;
+  if (!ready || !user) return <ScreenLoader label="Checking your session…" />;
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -34,7 +32,7 @@ export default function DashboardPage(): React.JSX.Element {
             <p className="text-sm text-muted">
               {loading
                 ? "Loading your support history…"
-                : `${tickets.length} ${tickets.length === 1 ? "ticket" : "tickets"} total`}
+                : `${pagination?.total ?? tickets.length} ${(pagination?.total ?? tickets.length) === 1 ? "ticket" : "tickets"} total`}
             </p>
           </div>
         </div>
@@ -56,16 +54,19 @@ export default function DashboardPage(): React.JSX.Element {
           </div>
         )}
 
-        {!loading && !error && tickets.length === 0 && <EmptyTickets />}
+        {!loading && !error && tickets.length === 0 && page === 1 && <EmptyTickets />}
 
         {!loading && !error && tickets.length > 0 && (
-          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 list-none">
-            {tickets.map((t) => (
-              <li key={t.id}>
-                <TicketCard ticket={t} />
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 list-none">
+              {tickets.map((t) => (
+                <li key={t.id}>
+                  <TicketCard ticket={t} />
+                </li>
+              ))}
+            </ul>
+            {pagination && <Pagination pagination={pagination} onPageChange={setPage} />}
+          </>
         )}
       </main>
     </div>

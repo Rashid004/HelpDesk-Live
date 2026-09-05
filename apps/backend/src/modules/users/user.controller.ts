@@ -6,6 +6,7 @@ import {
   changePasswordSchema,
   requestAvatarUploadSchema,
   toggleShiftSchema,
+  updateFcmTokenSchema,
   updateUserProfileSchema,
   updateUserStatusSchema,
 } from "@repo/shared";
@@ -75,6 +76,12 @@ export class UserController {
     const dto = toggleShiftSchema.parse(req.body);
     const data = await this.service.toggleShift(req.user!.id, dto.isOnShift);
     res.status(200).json(ApiResponseHelper.success(data, "Shift status updated"));
+  });
+
+  updateFcmToken = asyncHandler(async (req: Request, res: Response) => {
+    const dto = updateFcmTokenSchema.parse(req.body);
+    const data = await this.service.updateFcmToken(req.user!.id, dto.fcmToken);
+    res.status(200).json(ApiResponseHelper.success(data, "FCM token saved"));
   });
 
   changePassword = asyncHandler(async (req: Request, res: Response) => {

@@ -14,6 +14,7 @@ router.get("/me", controller.getMe);
 router.patch("/me", controller.updateMe);
 router.patch("/me/password", controller.changePassword);
 router.patch("/me/shift", authorize("agent"), controller.toggleShift);
+router.post("/fcm-token", controller.updateFcmToken);
 
 router.get("/", authorize("agent"), controller.getUserList);
 router.get("/agents/:department", authorize("agent"), controller.getListAgentsByDepartment);

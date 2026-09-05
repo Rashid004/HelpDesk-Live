@@ -52,6 +52,7 @@ const userSchema = new Schema<UserDoc>(
     status: { type: String, enum: ["active", "suspended"], default: "active" },
     statusUpdates: { type: [statusUpdateSchema], default: [] },
     refreshTokens: { type: [refreshTokenSchema], default: [] },
+    fcmToken: { type: String, default: null },
     lastSeenAt: { type: Date },
   },
   { timestamps: { createdAt: true, updatedAt: false } },

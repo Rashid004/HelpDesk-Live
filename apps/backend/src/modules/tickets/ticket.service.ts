@@ -16,6 +16,7 @@ import { ticketRepository } from "./ticket.repository.js";
 import { toTicketDTO, toTicketDTOList } from "./ticket.maper.js";
 import { userRepository } from "../users/user.repository.js";
 import { enqueueResolutionEmail } from "../../infrastructure/queue/email.queue.js";
+import { notifyAgentsOfNewTicket } from "../notifications/notification.service.js";
 import { logger } from "../../config/logger.js";
 
 export class TicketService {
@@ -36,19 +37,44 @@ export class TicketService {
   async createTicket(customerId: string, data: CreateTicketDTO) {
     const referenceNumber = generateReferenceNumber();
     const ticket = await ticketRepository.create(customerId, referenceNumber, data);
-    return toTicketDTO(ticket);
+    const dto = toTicketDTO(ticket);
+
+    // Fire-and-forget: a customer creating a ticket must get their response
+    // immediately regardless of FCM. Not awaited, and any rejection (a
+    // dead token, Firebase being slow/down) is caught right here so it
+    // can't become an unhandled rejection — it only ever reaches the log.
+    notifyAgentsOfNewTicket(dto).catch((err) => {
+      logger.error({ err, ticketId: dto.id }, "failed to notify agents of new ticket");
+    });
+
+    return dto;
   }
 
-  async getTicketById(id: string) {
-    const ticket = await ticketRepository.findById(id);
+  async getTicketById(id: string, requesterId: string, requesterRole: string) {
+    const ticket = await ticketRepository.findByIdWithNames(id);
     if (!ticket) throw new ApiError("Ticket not found", 404);
-    return toTicketDTO(ticket);
+    const dto = toTicketDTO(ticket);
+    this.assertViewable(dto, requesterId, requesterRole);
+    return dto;
   }
 
-  async getTicketByReferenceNumber(referenceNumber: string) {
+  async getTicketByReferenceNumber(referenceNumber: string, requesterId: string, requesterRole: string) {
     const ticket = await ticketRepository.findByReferenceNumber(referenceNumber);
     if (!ticket) throw new ApiError("Ticket not found", 404);
-    return toTicketDTO(ticket);
+    const dto = toTicketDTO(ticket);
+    this.assertViewable(dto, requesterId, requesterRole);
+    return dto;
+  }
+
+  // Agents can view any ticket — they need to browse the unclaimed queue to
+  // decide what to pick up. Customers may only view their own; without this,
+  // GET /tickets/:id had no ownership check at all and any authenticated
+  // customer could read any other customer's ticket (title, resolution
+  // note, rating) just by guessing/enumerating ids.
+  private assertViewable(ticket: { customer: string }, requesterId: string, requesterRole: string) {
+    if (requesterRole === "customer" && ticket.customer !== requesterId) {
+      throw new ApiError("Ticket not found", 404);
+    }
   }
 
   async listTickets(filter: Record<string, unknown>, page: number, limit: number) {

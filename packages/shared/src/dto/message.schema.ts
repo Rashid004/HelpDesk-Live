@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { fileTypeEnum } from "../types/enums.js";
+import { fileTypeEnum, userRoleEnum } from "../types/enums.js";
 
 export const messageAttachmentSchema = z.object({
     fileUrl: z.string().url(),
@@ -25,6 +25,10 @@ export const messageSchema = z.object({
     id: z.string(),
     ticket: z.string(),
     sender: z.string(),
+    // Populated from message.repository.ts's findByTicketId query — absent
+    // on a message returned right after creation (unpopulated write path).
+    senderName: z.string().optional(),
+    senderRole: userRoleEnum.optional(),
     content: z.string().optional(),
     attachment: messageAttachmentSchema.optional(),
     readAt: z.date().nullable().default(null),

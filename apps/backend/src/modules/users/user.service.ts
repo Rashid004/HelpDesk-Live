@@ -63,6 +63,14 @@ class UserService {
     return toUserDTO(updated!);
   }
 
+  async updateFcmToken(userId: string, fcmToken: string) {
+    const user = await userRepository.findById(userId);
+    if (!user) throw new ApiError("User not found", 404);
+
+    const updated = await userRepository.updateFcmToken(userId, fcmToken);
+    return toUserDTO(updated!);
+  }
+
   async changePassword(userId: string, currentPassword: string, newPassword: string) {
     const user = await userRepository.findById(userId);
     if (!user) throw new ApiError("User not found", 404);

@@ -61,6 +61,10 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(8, "Password must be at least 8 characters"),
 });
 
+export const updateFcmTokenSchema = z.object({
+  fcmToken: z.string().min(1, "fcmToken is required"),
+});
+
 export const userSchema = z.object({
   ...userBaseSchema,
   id: z.string(),
@@ -69,6 +73,10 @@ export const userSchema = z.object({
   status: userStatusEnum.default("active"),
   statusUpdates: z.array(userStatusUpdateSchema).default([]),
   refreshTokens: z.array(refreshTokenSchema).default([]),
+  // Web push registration token (FCM) for this device. Nullable — not every
+  // user has granted browser notification permission. Never sent to clients
+  // (see toUserDTO), only used server-side to target push sends.
+  fcmToken: z.string().nullable().default(null),
   lastSeenAt: z.date().optional(),
   createdAt: z.date(),
 });
@@ -79,6 +87,7 @@ export type UpdateUserStatusDTO = z.infer<typeof updateUserStatusSchema>;
 export type ToggleShiftDTO = z.infer<typeof toggleShiftSchema>;
 export type ChangePasswordDTO = z.infer<typeof changePasswordSchema>;
 export type RequestAvatarUploadDTO = z.infer<typeof requestAvatarUploadSchema>;
+export type UpdateFcmTokenDTO = z.infer<typeof updateFcmTokenSchema>;
 export type User = z.infer<typeof userSchema>;
 export type UserAgentMeta = z.infer<typeof agentMetaSchema>;
 export type UserStatusUpdate = z.infer<typeof userStatusUpdateSchema>;

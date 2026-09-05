@@ -12,9 +12,10 @@ import { Card } from "../../../components/ui/Card";
 import { Field, FieldError } from "../../../components/ui/Field";
 import { Input } from "../../../components/ui/Input";
 import { PasswordInput } from "../../../components/ui/PasswordInput";
-import { useGuestGuard } from "../../../hooks/useAuthGuard";
-import { signup } from "../../../lib/api";
+import { homeFor, useGuestGuard } from "../../../hooks/useAuthGuard";
+import { ApiError, signup } from "../../../lib/api";
 import { cn } from "../../../lib/cn";
+import { applyApiFieldErrors } from "../../../lib/formErrors";
 import { saveSession } from "../../../lib/session";
 import {
   passwordStrength,
@@ -46,6 +47,7 @@ export default function SignUpPage(): React.JSX.Element {
     register,
     handleSubmit,
     setValue,
+    setError,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<SignupFormInput, unknown, SignupFormValues>({
@@ -62,14 +64,24 @@ export default function SignUpPage(): React.JSX.Element {
 
   async function onSubmit(values: SignupFormValues): Promise<void> {
     // confirmPassword is a UI-only field — the backend signupSchema doesn't have it.
-    const { confirmPassword: _omit, ...payload } = values;
+    const { confirmPassword, ...payload } = values;
+    void confirmPassword;
     setServerError(null);
     try {
       const res = await signup(payload);
       saveSession(res);
       setRedirecting(true);
-      router.push("/dashboard");
+      router.push(homeFor(res.user.role));
     } catch (err) {
+      // A 409 here can only mean one thing — auth.service.ts's signupUser
+      // has exactly one 409 throw site (email already registered) — so
+      // unlike a generic error, it's safe to attach straight to the field
+      // even though the backend doesn't send structured field data for it.
+      if (err instanceof ApiError && err.status === 409) {
+        setError("email", { type: "server", message: "Email already registered" });
+        return;
+      }
+      if (applyApiFieldErrors(err, setError)) return;
       setServerError(
         err instanceof Error
           ? err.message
@@ -171,7 +183,7 @@ export default function SignUpPage(): React.JSX.Element {
 
         {/* Role selector — bold segmented buttons, not a dropdown */}
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="label-brut mb-1.5">I'm signing up as</legend>
+          <legend className="label-brut mb-1.5">I&apos;m signing up as</legend>
           <div className="grid grid-cols-2 gap-3">
             {ROLES.map((r) => {
               const active = role === r.value;

@@ -2,13 +2,17 @@ import type { SendMessageDTO } from "@repo/shared";
 import { MessageModel } from "./message.model.js";
 
 class MessageRepository {
-  create(ticketId: string, senderId: string, data: SendMessageDTO) {
-    return MessageModel.create({
+  async create(ticketId: string, senderId: string, data: SendMessageDTO) {
+    const message = await MessageModel.create({
       ticket: ticketId,
       sender: senderId,
       content: data.content,
       attachment: data.attachment,
     });
+    // Populated so both the REST response and the message:new socket
+    // broadcast (realtime/handlers/message.handler.ts) carry senderName —
+    // otherwise only history fetched via findByTicketId would have it.
+    return message.populate("sender", "fullName email role");
   }
 
   findByTicketId(ticketId: string) {

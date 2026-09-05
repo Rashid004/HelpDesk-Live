@@ -3,7 +3,7 @@ import type { User } from "@repo/shared";
 import type { UserDoc } from "./user.model.js";
 
 export function toUserDTO(doc: HydratedDocument<UserDoc>): User {
-  const { _id, password, refreshTokens, statusUpdates, ...obj } = doc.toObject();
+  const { _id, password, refreshTokens, fcmToken, statusUpdates, ...obj } = doc.toObject();
 
   return {
     ...obj,
@@ -15,6 +15,7 @@ export function toUserDTO(doc: HydratedDocument<UserDoc>): User {
       changedBy: update.changedBy.toString(),
     })),
     refreshTokens: [],
+    fcmToken: null,
   };
 }
 

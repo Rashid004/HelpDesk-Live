@@ -29,5 +29,14 @@ export type MessageView = Message & {
 export interface AuthResult {
   user: UserView;
   accessToken: string;
-  refreshToken: string;
+}
+
+/** Mirrors the backend's ApiResponse["meta"]["pagination"] shape exactly. */
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
