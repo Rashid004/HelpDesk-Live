@@ -68,6 +68,7 @@ export function AgentStatusForm({
           id="status"
           options={STATUS_OPTIONS}
           invalid={!!errors.status}
+          disabled={isSubmitting}
           {...register("status")}
         />
       </Field>
@@ -78,7 +79,13 @@ export function AgentStatusForm({
         hint="Optional — recorded in the ticket's status history."
         error={errors.note?.message}
       >
-        <Textarea id="note" rows={2} invalid={!!errors.note} {...register("note")} />
+        <Textarea
+          id="note"
+          rows={2}
+          invalid={!!errors.note}
+          disabled={isSubmitting}
+          {...register("note")}
+        />
       </Field>
 
       {status === "resolved" && (
@@ -93,6 +100,7 @@ export function AgentStatusForm({
             id="resolutionNote"
             rows={3}
             invalid={!!errors.resolutionNote}
+            disabled={isSubmitting}
             {...register("resolutionNote")}
           />
         </Field>

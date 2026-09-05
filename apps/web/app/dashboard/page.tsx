@@ -9,6 +9,7 @@ import { FieldError } from "../../components/ui/Field";
 import { Pagination } from "../../components/ui/Pagination";
 import { TicketCardSkeleton } from "../../components/ui/Skeleton";
 import { useAuthGuard } from "../../hooks/useAuthGuard";
+import { usePushNotifications } from "../../hooks/usePushNotifications";
 import { useSession } from "../../hooks/useSession";
 import { useTickets } from "../../hooks/useTickets";
 
@@ -16,6 +17,8 @@ export default function DashboardPage(): React.JSX.Element {
   const { ready } = useAuthGuard("customer");
   const { tickets, pagination, loading, error, page, setPage, reload } = useTickets({}, ready);
   const { user } = useSession();
+
+  usePushNotifications(ready);
 
   if (!ready || !user) return <ScreenLoader label="Checking your session…" />;
 

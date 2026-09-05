@@ -16,7 +16,7 @@ import { ticketRepository } from "./ticket.repository.js";
 import { toTicketDTO, toTicketDTOList } from "./ticket.maper.js";
 import { userRepository } from "../users/user.repository.js";
 import { enqueueResolutionEmail } from "../../infrastructure/queue/email.queue.js";
-import { notifyAgentsOfNewTicket } from "../notifications/notification.service.js";
+import { notifyAgentsOfNewTicket, notifyCustomerOfResolution } from "../notifications/notification.service.js";
 import { logger } from "../../config/logger.js";
 
 export class TicketService {
@@ -126,6 +126,7 @@ export class TicketService {
       data.note,
       data.resolutionNote,
     );
+    const dto = toTicketDTO(updated!);
 
     if (data.status === "resolved" && ticket.status !== "resolved") {
       const customer = await userRepository.findById(ticket.customer.toString());
@@ -134,9 +135,16 @@ export class TicketService {
       } else {
         logger.warn({ ticketId }, "resolved ticket has no customer email — email skipped");
       }
+
+      // Fire-and-forget, same as notifyAgentsOfNewTicket in createTicket
+      // above: never let a dead/missing token or Firebase being slow/down
+      // delay the agent's resolve-ticket response.
+      notifyCustomerOfResolution(dto, customer?.fcmToken).catch((err) => {
+        logger.error({ err, ticketId }, "failed to notify customer of ticket resolution");
+      });
     }
 
-    return toTicketDTO(updated!);
+    return dto;
   }
 
   async rateTicket(ticketId: string, customerId: string, data: RateTicketDTO) {

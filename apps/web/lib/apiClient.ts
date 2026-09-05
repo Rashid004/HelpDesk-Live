@@ -77,12 +77,21 @@ axiosClient.interceptors.request.use((config) => {
 function toApiError(error: AxiosError<ApiEnvelope<unknown>>): ApiError {
   const res = error.response;
   const envelope = res?.data;
+
+  // No `res` at all means the request never got a response — the backend is
+  // unreachable (down, CORS, offline). Axios's own error.message in that
+  // case is "Network Error", which reads like a raw technical string rather
+  // than something a user should see.
+  if (!res) {
+    return new ApiError("Can't reach the server. Check your connection and try again.", 0);
+  }
+
   const message =
     envelope?.message ||
     envelope?.errors?.map((e) => e.message).join(", ") ||
     error.message ||
     "Something went wrong. Please try again.";
-  return new ApiError(message, res?.status ?? 0, envelope?.errors ?? []);
+  return new ApiError(message, res.status, envelope?.errors ?? []);
 }
 
 axiosClient.interceptors.response.use(

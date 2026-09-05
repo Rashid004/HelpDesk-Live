@@ -10,6 +10,7 @@ import { FieldError } from "../../../components/ui/Field";
 import { Pagination } from "../../../components/ui/Pagination";
 import { TicketCardSkeleton } from "../../../components/ui/Skeleton";
 import { Tabs } from "../../../components/ui/Tabs";
+import { usePushNotifications } from "../../../hooks/usePushNotifications";
 import { useAuthGuard } from "../../../hooks/useAuthGuard";
 import { useSession } from "../../../hooks/useSession";
 import { useTickets } from "../../../hooks/useTickets";
@@ -20,6 +21,8 @@ export default function AgentDashboardPage(): React.JSX.Element {
   const { ready } = useAuthGuard("agent");
   const { user } = useSession();
   const [scope, setScope] = useState<Scope>("unassigned");
+
+  usePushNotifications(ready);
 
   const queue = useTickets({ unassigned: scope === "unassigned" }, ready && scope === "unassigned");
   const mine = useTickets({ mine: scope === "mine" }, ready && scope === "mine");

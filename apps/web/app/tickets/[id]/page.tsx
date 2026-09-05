@@ -6,6 +6,7 @@ import { ScreenLoader } from "../../../components/app/ScreenLoader";
 import { TopBar } from "../../../components/app/TopBar";
 import { AgentClaimPanel } from "../../../components/tickets/AgentClaimPanel";
 import { AgentStatusForm } from "../../../components/tickets/AgentStatusForm";
+import { ChatPanel } from "../../../components/tickets/ChatPanel";
 import { RatingWidget } from "../../../components/tickets/RatingWidget";
 import { TicketAttachments } from "../../../components/tickets/TicketAttachments";
 import { Button } from "../../../components/ui/Button";
@@ -32,6 +33,10 @@ export default function TicketDetailPage(): React.JSX.Element {
   const isUnclaimed = isAgent && ticket?.agent === null;
   const canRate =
     isOwner && (ticket?.status === "resolved" || ticket?.status === "closed");
+  // Matches message.service.ts's assertParticipant exactly — the backend's
+  // ticket:join socket handler rejects anyone else, so there's no point
+  // rendering the chat panel for them.
+  const canChat = isOwner || isAssignedToMe;
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -116,10 +121,18 @@ export default function TicketDetailPage(): React.JSX.Element {
                     <CardTitle>Conversation</CardTitle>
                   </CardHeader>
                   <CardBody>
-                    <p className="text-sm text-muted">
-                      Live chat lands here in the next pass — this ticket&apos;s real messages,
-                      typing indicator, and read receipts over Socket.IO.
-                    </p>
+                    {canChat ? (
+                      <ChatPanel
+                        ticketId={ticket.id}
+                        peerLabel={isAgent ? "Customer" : "Agent"}
+                      />
+                    ) : (
+                      <p className="text-sm text-muted">
+                        {isUnclaimed
+                          ? "Assign this ticket to yourself to start chatting with the customer."
+                          : "Chat opens up once you're the customer or the assigned agent."}
+                      </p>
+                    )}
                   </CardBody>
                 </Card>
               </div>

@@ -1,68 +1,140 @@
+"use client";
+
+import { io, type Socket } from "socket.io-client";
+import type { Message, SendMessageDTO, Ticket } from "@repo/shared";
+import { getAccessToken } from "./session";
+
 /**
- * Socket.IO client wrapper — STUB.
+ * Socket.IO client wrapper — matches the real events the backend emits/
+ * accepts (apps/backend/src/realtime/handlers/*.ts), not a guessed set:
  *
- * Nothing here opens a real connection yet. It exists so the chat page can
- * import a stable interface now; later this file becomes:
+ *   client -> server   ticket:join(ticketId, ack)     chat.handler.ts
+ *             ticket:leave(ticketId)                  chat.handler.ts
+ *             message:send({ticketId,data}, ack)      message.handler.ts
+ *             message:read({ticketId,messageId}, ack) message.handler.ts
+ *             typing:start(ticketId)                  typing.handler.ts
+ *             typing:stop(ticketId)                   typing.handler.ts
  *
- *   import { io, type Socket } from "socket.io-client";
- *   let socket: Socket | null = null;
- *   export function getSocket() {
- *     socket ??= io(process.env.NEXT_PUBLIC_SOCKET_URL!, {
- *       auth: { token: getAccessToken() },
- *       transports: ["websocket"],
- *     });
- *     return socket;
- *   }
+ *   server -> client   message:new(message)
+ *             message:read(message)
+ *             typing:start({ticketId,userId})
+ *             typing:stop({ticketId,userId})
+ *             ticket:assigned({ticketId,agentId,ticket})   ticket.service.ts
  *
- * Server events we'll wire (see apps/backend/src/realtime): "message:new",
- * "typing:start", "typing:stop", "message:read", "presence:update".
+ * One underlying connection is shared by every `createTicketSocket()` call
+ * (module-level singleton) — hooks/useTicketMessages.ts owns its lifecycle
+ * (connect+join on mount, leave+disconnect on unmount); other hooks like
+ * hooks/useTypingIndicator.ts just attach listeners to the same connection.
  */
 
-export type SocketEvent =
-  | "message:new"
-  | "typing:start"
-  | "typing:stop"
-  | "message:read"
-  | "presence:update";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL ?? "http://localhost:8000";
 
-type Handler = (payload: unknown) => void;
+export interface ServerToClientEvents {
+  "message:new": (message: Message) => void;
+  "message:read": (message: Message) => void;
+  "typing:start": (payload: { ticketId: string; userId: string }) => void;
+  "typing:stop": (payload: { ticketId: string; userId: string }) => void;
+  "ticket:assigned": (payload: { ticketId: string; agentId: string; ticket: Ticket }) => void;
+}
+
+interface ClientToServerEvents {
+  "ticket:join": (ticketId: string, ack: (ok: boolean) => void) => void;
+  "ticket:leave": (ticketId: string) => void;
+  "message:send": (
+    payload: { ticketId: string; data: SendMessageDTO },
+    ack: (ok: boolean) => void,
+  ) => void;
+  "message:read": (payload: { ticketId: string; messageId: string }, ack: (ok: boolean) => void) => void;
+  "typing:start": (ticketId: string) => void;
+  "typing:stop": (ticketId: string) => void;
+}
+
+type EventName = keyof ServerToClientEvents;
+type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+
+let socket: AppSocket | null = null;
+
+function ensureSocket(): AppSocket {
+  // `auth` as a function (not a plain object) is what makes this lazy — it's
+  // called fresh on every connect/reconnect attempt, so a token minted by a
+  // silent refresh after this module first loaded is still picked up.
+  socket ??= io(SOCKET_URL, {
+    autoConnect: false,
+    auth: (cb) => cb({ token: getAccessToken() }),
+  });
+  return socket;
+}
 
 export interface TicketSocket {
-  joinTicket(ticketId: string): void;
+  isConnected(): boolean;
+  /** For a "reconnecting…" indicator — fires on every transport connect/disconnect. */
+  onConnectionChange(handler: (connected: boolean) => void): () => void;
+  /** Resolves false if the server rejected the join (not a real participant). */
+  joinTicket(ticketId: string): Promise<boolean>;
   leaveTicket(ticketId: string): void;
-  on(event: SocketEvent, handler: Handler): () => void;
+  /** Resolves false if the send failed — caller decides how to surface that. */
+  sendMessage(ticketId: string, data: SendMessageDTO): Promise<boolean>;
+  markRead(ticketId: string, messageId: string): Promise<boolean>;
   emitTyping(ticketId: string, isTyping: boolean): void;
+  on<E extends EventName>(event: E, handler: ServerToClientEvents[E]): () => void;
   disconnect(): void;
 }
 
-/** No-op socket. Swap for a real socket.io-client instance later. */
 export function createTicketSocket(): TicketSocket {
-  const handlers = new Map<SocketEvent, Set<Handler>>();
+  const s = ensureSocket();
+  if (!s.connected) s.connect();
 
   return {
+    isConnected: () => s.connected,
+
+    onConnectionChange(handler) {
+      const onConnect = () => handler(true);
+      const onDisconnect = () => handler(false);
+      s.on("connect", onConnect);
+      s.on("disconnect", onDisconnect);
+      return () => {
+        s.off("connect", onConnect);
+        s.off("disconnect", onDisconnect);
+      };
+    },
+
     joinTicket(ticketId) {
-      console.log("[socket:stub] joinTicket", ticketId);
-      // TODO: socket.emit("ticket:join", { ticketId })
+      return new Promise((resolve) => {
+        s.emit("ticket:join", ticketId, (ok: boolean) => resolve(ok));
+      });
     },
+
     leaveTicket(ticketId) {
-      console.log("[socket:stub] leaveTicket", ticketId);
-      // TODO: socket.emit("ticket:leave", { ticketId })
+      s.emit("ticket:leave", ticketId);
     },
-    on(event, handler) {
-      // TODO: socket.on(event, handler)
-      const set = handlers.get(event) ?? new Set<Handler>();
-      set.add(handler);
-      handlers.set(event, set);
-      return () => set.delete(handler);
+
+    sendMessage(ticketId, data) {
+      return new Promise((resolve) => {
+        s.emit("message:send", { ticketId, data }, (ok: boolean) => resolve(ok));
+      });
     },
+
+    markRead(ticketId, messageId) {
+      return new Promise((resolve) => {
+        s.emit("message:read", { ticketId, messageId }, (ok: boolean) => resolve(ok));
+      });
+    },
+
     emitTyping(ticketId, isTyping) {
-      console.log("[socket:stub] emitTyping", ticketId, isTyping);
-      // TODO: socket.emit(isTyping ? "typing:start" : "typing:stop", { ticketId })
+      s.emit(isTyping ? "typing:start" : "typing:stop", ticketId);
     },
+
+    on(event, handler) {
+      // TS can't correlate a generic `E` with `ServerToClientEvents[E]`
+      // inside this function body (known limitation with dependent generic
+      // params) — the public signature above is fully type-checked at every
+      // call site, so this cast is just satisfying the implementation.
+      s.on(event, handler as never);
+      return () => s.off(event, handler as never);
+    },
+
     disconnect() {
-      console.log("[socket:stub] disconnect");
-      handlers.clear();
-      // TODO: socket.disconnect()
+      s.disconnect();
     },
   };
 }

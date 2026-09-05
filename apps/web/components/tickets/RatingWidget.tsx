@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ApiError, rateTicket } from "../../lib/api";
+import { rateTicket } from "../../lib/api";
 import { formatDate } from "../../lib/format";
 import type { TicketView } from "../../lib/types";
 import { Button } from "../ui/Button";
@@ -46,7 +46,7 @@ export function RatingWidget({
       onRated();
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : "Couldn't submit your rating. Please try again.",
+        err instanceof Error ? err.message : "Couldn't submit your rating. Please try again.",
       );
     } finally {
       setSubmitting(false);
@@ -55,7 +55,7 @@ export function RatingWidget({
 
   return (
     <div className="flex flex-col gap-3">
-      <StarRating value={score} onChange={setScore} />
+      <StarRating value={score} onChange={setScore} readOnly={submitting} />
       <Textarea
         placeholder="Anything else? (optional)"
         rows={2}

@@ -46,3 +46,38 @@ export async function notifyAgentsOfNewTicket(ticket: Ticket): Promise<void> {
     "new-ticket push notification sent",
   );
 }
+
+/**
+ * Push the customer when their ticket is resolved. Called fire-and-forget
+ * from ticket.service.ts's updateStatus — same reasoning as
+ * notifyAgentsOfNewTicket: an agent resolving a ticket must get their
+ * response immediately regardless of FCM.
+ *
+ * Takes the token directly instead of looking the customer up again —
+ * ticket.service.ts already fetched the customer doc to send the
+ * resolution email, so this reuses that instead of a second DB round trip.
+ */
+export async function notifyCustomerOfResolution(
+  ticket: Ticket,
+  customerFcmToken: string | null | undefined,
+): Promise<void> {
+  if (!messaging) {
+    logger.warn("FCM not configured — skipping resolution push");
+    return;
+  }
+  if (!customerFcmToken) return;
+
+  await messaging.send({
+    token: customerFcmToken,
+    notification: {
+      title: "Ticket resolved",
+      body: `${ticket.referenceNumber} — ${ticket.title} has been resolved.`,
+    },
+    data: {
+      type: "ticket:resolved",
+      ticketId: ticket.id,
+    },
+  });
+
+  logger.info({ ticketId: ticket.id }, "resolution push notification sent to customer");
+}
